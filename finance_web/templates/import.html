@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% set active = "import" %}
+{% block title %}Импорт Excel — {{ period }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <h2><i class="bi bi-file-earmark-arrow-up"></i> Импорт из Excel</h2>
+</div>
+
+<!-- Шаг 1: Загрузка файла -->
+<div id="step1" class="data-card">
+  <h5 class="fw-bold mb-3"><span class="badge bg-primary me-2">1</span>Загрузите файл</h5>
+  <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+    <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+    <div class="mt-2 text-muted">Нажмите или перетащите файл сюда</div>
+    <div class="small text-muted mt-1">Поддерживаются: .xlsx, .xls, .csv</div>
+  </div>
+  <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="uploadFile(this.files[0])">
+  <div id="uploadProgress" class="mt-3 d-none">
+    <div class="d-flex align-items-center gap-2">
+      <div class="spinner-border spinner-border-sm text-primary"></div>
+      <span>Читаю файл...</span>
+    </div>
+  </div>
+</div>
+
+<!-- Шаг 2: Настройка маппинга -->
+<div id="step2" class="d-none">
+
+  <!-- Производство -->
+  <div class="data-card mb-3" id="prodSection">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-bold mb-0"><span class="badge bg-success me-2">2а</span>Производство</h5>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="importProd" checked onchange="toggleSection('prod')">
+        <label class="form-check-label" for="importProd">Импортировать</label>
+      </div>
+    </div>
+    <div id="prodConfig">
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label text-muted small">Лист с данными</label>
+          <select id="prodSheet" class="form-select form-select-sm" onchange="renderProdCols()"></select>
+        </div>
+      </div>
+      <div class="row g-2 mb-2" id="prodColsRow">
+        <div class="col-md-4 col-6">
+          <label class="form-label text-muted small">Колонка: Название продукта *</label>
+          <select id="prodColName" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="form-label text-muted small">Ед. изм.</label>
+          <select id="prodColUnit" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="form-label text-muted small">План, кол-во</label>
+          <select id="prodColPlanQty" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="form-label text-muted small">Факт, кол-во</label>
+          <select id="prodColFactQty" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-2 col-6">
+          <label class="form-label text-muted small">Себест. за ед.</label>
+          <select id="prodColCost" class="form-select form-select-sm"></select>
+        </div>
+      </div>
+      <div id="prodPreview" class="table-responsive mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Расходы -->
+  <div class="data-card mb-3" id="expSection">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-bold mb-0"><span class="badge bg-warning text-dark me-2">2б</span>Расходы</h5>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="importExp" checked onchange="toggleSection('exp')">
+        <label class="form-check-label" for="importExp">Импортировать</label>
+      </div>
+    </div>
+    <div id="expConfig">
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label text-muted small">Лист с данными</label>
+          <select id="expSheet" class="form-select form-select-sm" onchange="renderExpCols()"></select>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <div class="col-md-3 col-6">
+          <label class="form-label text-muted small">Колонка: Статья расходов *</label>
+          <select id="expColName" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label text-muted small">Категория (ключ)</label>
+          <select id="expColCat" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label text-muted small">Плановая сумма</label>
+          <select id="expColPlan" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label text-muted small">Фактическая сумма</label>
+          <select id="expColFact" class="form-select form-select-sm"></select>
+        </div>
+      </div>
+      <div class="alert alert-info small py-2 mt-2">
+        <i class="bi bi-info-circle"></i>
+        Если колонка «Категория» не выбрана или содержит неизвестные значения — расходы попадут в «Прочие расходы».
+        Допустимые ключи: <code>raw_materials</code>, <code>labor</code>, <code>overhead</code>,
+        <code>depreciation</code>, <code>administrative</code>, <code>other</code>.
+      </div>
+      <div id="expPreview" class="table-responsive mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Выручка -->
+  <div class="data-card mb-3" id="revSection">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-bold mb-0"><span class="badge bg-info text-dark me-2">2в</span>Выручка</h5>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="importRev" onchange="toggleSection('rev')">
+        <label class="form-check-label" for="importRev">Импортировать</label>
+      </div>
+    </div>
+    <div id="revConfig" class="d-none">
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label text-muted small">Лист с данными</label>
+          <select id="revSheet" class="form-select form-select-sm" onchange="renderRevCols()"></select>
+        </div>
+      </div>
+      <div class="row g-2 mb-2">
+        <div class="col-md-4 col-6">
+          <label class="form-label text-muted small">Колонка: Продукт/Услуга *</label>
+          <select id="revColProduct" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-4 col-6">
+          <label class="form-label text-muted small">Цена</label>
+          <select id="revColPrice" class="form-select form-select-sm"></select>
+        </div>
+        <div class="col-md-4 col-6">
+          <label class="form-label text-muted small">Количество</label>
+          <select id="revColQty" class="form-select form-select-sm"></select>
+        </div>
+      </div>
+      <div id="revPreview" class="table-responsive mt-3"></div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 mt-2">
+    <button class="btn btn-primary btn-lg px-5" onclick="applyImport()">
+      <i class="bi bi-check2-circle"></i> Импортировать данные
+    </button>
+    <button class="btn btn-outline-secondary" onclick="resetImport()">
+      <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+    </button>
+  </div>
+</div>
+
+<!-- Результат -->
+<div id="step3" class="d-none">
+  <div class="data-card text-center py-5">
+    <i class="bi bi-check-circle-fill text-success fs-1"></i>
+    <h4 class="mt-3 fw-bold">Импорт выполнен успешно!</h4>
+    <div id="importResult" class="text-muted mb-4"></div>
+    <a href="/period/{{ period }}" class="btn btn-primary me-2">
+      <i class="bi bi-speedometer2"></i> Перейти на дашборд
+    </a>
+    <button class="btn btn-outline-secondary" onclick="resetImport()">
+      <i class="bi bi-arrow-counterclockwise"></i> Импортировать ещё
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const period = {{ period|tojson }};
+let fileData = null;  // { tmp_path, sheet_names, sheets, preview }
+
+// ─── Drag & drop ──────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); uploadFile(e.dataTransfer.files[0]); });
+
+// ─── Upload ───────────────────────────────────────────────────────
+async function uploadFile(file) {
+  if (!file) return;
+  document.getElementById('uploadProgress').classList.remove('d-none');
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch(`/api/period/${encodeURIComponent(period)}/import/upload`, { method: 'POST', body: fd });
+  document.getElementById('uploadProgress').classList.add('d-none');
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error || 'Ошибка загрузки', 'danger'); return; }
+  fileData = d;
+  showStep2();
+}
+
+function showStep2() {
+  document.getElementById('step1').classList.add('d-none');
+  document.getElementById('step2').classList.remove('d-none');
+  populateSheetSelects();
+}
+
+// ─── Populate selects ─────────────────────────────────────────────
+function populateSheetSelects() {
+  const sheets = fileData.sheet_names;
+  ['prodSheet','expSheet','revSheet'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = sheets.map(s => `<option value="${s}">${s}</option>`).join('');
+    // Auto-pick second sheet for expenses if available
+    if (id === 'expSheet' && sheets.length > 1) sel.value = sheets[1];
+  });
+  renderProdCols();
+  renderExpCols();
+  renderRevCols();
+}
+
+function colOptions(sheet, selected) {
+  const cols = fileData.sheets[sheet] || [];
+  const noneOpt = `<option value="">— не указано —</option>`;
+  return noneOpt + cols.map(c => `<option value="${c}" ${c===selected?'selected':''}>${c}</option>`).join('');
+}
+
+function autoSelect(sheet, keywords) {
+  const cols = (fileData.sheets[sheet] || []).map(c => c.toLowerCase());
+  for (const kw of keywords) {
+    const idx = cols.findIndex(c => c.includes(kw));
+    if (idx >= 0) return fileData.sheets[sheet][idx];
+  }
+  return '';
+}
+
+function renderProdCols() {
+  const sheet = document.getElementById('prodSheet').value;
+  document.getElementById('prodColName').innerHTML     = colOptions(sheet, autoSelect(sheet, ['назв','продукт','наим','name']));
+  document.getElementById('prodColUnit').innerHTML     = colOptions(sheet, autoSelect(sheet, ['ед','unit','изм']));
+  document.getElementById('prodColPlanQty').innerHTML  = colOptions(sheet, autoSelect(sheet, ['план','plan']));
+  document.getElementById('prodColFactQty').innerHTML  = colOptions(sheet, autoSelect(sheet, ['факт','fact']));
+  document.getElementById('prodColCost').innerHTML     = colOptions(sheet, autoSelect(sheet, ['себест','cost','цена']));
+  renderPreview('prod', sheet);
+}
+
+function renderExpCols() {
+  const sheet = document.getElementById('expSheet').value;
+  document.getElementById('expColName').innerHTML  = colOptions(sheet, autoSelect(sheet, ['стат','назв','наим','name']));
+  document.getElementById('expColCat').innerHTML   = colOptions(sheet, autoSelect(sheet, ['катег','cat','тип','type']));
+  document.getElementById('expColPlan').innerHTML  = colOptions(sheet, autoSelect(sheet, ['план','plan']));
+  document.getElementById('expColFact').innerHTML  = colOptions(sheet, autoSelect(sheet, ['факт','fact']));
+  renderPreview('exp', sheet);
+}
+
+function renderRevCols() {
+  const sheet = document.getElementById('revSheet').value;
+  document.getElementById('revColProduct').innerHTML = colOptions(sheet, autoSelect(sheet, ['продукт','услуг','name','назв']));
+  document.getElementById('revColPrice').innerHTML   = colOptions(sheet, autoSelect(sheet, ['цена','price']));
+  document.getElementById('revColQty').innerHTML     = colOptions(sheet, autoSelect(sheet, ['кол','qty','количест']));
+  renderPreview('rev', sheet);
+}
+
+// ─── Preview table ────────────────────────────────────────────────
+function renderPreview(type, sheet) {
+  const rows = fileData.preview[sheet] || [];
+  const cols = fileData.sheets[sheet] || [];
+  if (!rows.length) return;
+  let html = `<table class="table table-sm table-bordered small"><thead class="table-light"><tr>`;
+  cols.forEach(c => html += `<th>${c}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.slice(0, 5).forEach(row => {
+    html += '<tr>' + row.map(v => `<td>${v}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById(`${type}Preview`).innerHTML = '<div class="text-muted small mb-1">Предпросмотр (первые строки):</div>' + html;
+}
+
+// ─── Toggle sections ──────────────────────────────────────────────
+function toggleSection(type) {
+  const checked = document.getElementById(`import${type.charAt(0).toUpperCase()+type.slice(1)}`).checked;
+  document.getElementById(`${type}Config`).classList.toggle('d-none', !checked);
+}
+
+// ─── Apply import ─────────────────────────────────────────────────
+async function applyImport() {
+  const mappings = {};
+
+  if (document.getElementById('importProd').checked) {
+    mappings.production = {
+      sheet: document.getElementById('prodSheet').value,
+      cols: {
+        name:          document.getElementById('prodColName').value,
+        unit:          document.getElementById('prodColUnit').value,
+        plan_qty:      document.getElementById('prodColPlanQty').value,
+        fact_qty:      document.getElementById('prodColFactQty').value,
+        cost_per_unit: document.getElementById('prodColCost').value,
+      }
+    };
+  }
+  if (document.getElementById('importExp').checked) {
+    mappings.expenses = {
+      sheet: document.getElementById('expSheet').value,
+      cols: {
+        name:        document.getElementById('expColName').value,
+        category:    document.getElementById('expColCat').value,
+        plan_amount: document.getElementById('expColPlan').value,
+        fact_amount: document.getElementById('expColFact').value,
+      }
+    };
+  }
+  if (document.getElementById('importRev').checked) {
+    mappings.revenue = {
+      sheet: document.getElementById('revSheet').value,
+      cols: {
+        product: document.getElementById('revColProduct').value,
+        price:   document.getElementById('revColPrice').value,
+        qty:     document.getElementById('revColQty').value,
+      }
+    };
+  }
+
+  const r = await fetch(`/api/period/${encodeURIComponent(period)}/import/apply`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ tmp_path: fileData.tmp_path, mappings })
+  });
+  const d = await r.json();
+  if (!r.ok) { showToast(d.error || 'Ошибка импорта', 'danger'); return; }
+
+  const imp = d.imported;
+  document.getElementById('importResult').innerHTML =
+    `Производство: <strong>${imp.production}</strong> позиций &nbsp;|&nbsp;
+     Расходы: <strong>${imp.expenses}</strong> статей &nbsp;|&nbsp;
+     Выручка: <strong>${imp.revenue}</strong> позиций`;
+
+  document.getElementById('step2').classList.add('d-none');
+  document.getElementById('step3').classList.remove('d-none');
+}
+
+function resetImport() {
+  fileData = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('step1').classList.remove('d-none');
+  document.getElementById('step2').classList.add('d-none');
+  document.getElementById('step3').classList.add('d-none');
+}
+</script>
+{% endblock %}

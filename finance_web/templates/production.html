@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% set active = "production" %}
+{% block title %}Производство — {{ period }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <h2><i class="bi bi-buildings"></i> Производство</h2>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+    <i class="bi bi-plus-lg"></i> Добавить продукт
+  </button>
+</div>
+
+<div class="data-card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle" id="prodTable">
+      <thead>
+        <tr>
+          <th>Продукт</th>
+          <th class="text-center">Ед.</th>
+          <th class="text-end">План (кол-во)</th>
+          <th class="text-end">Факт (кол-во)</th>
+          <th class="text-center">Выполнение</th>
+          <th class="text-end">Цена/ед. ₽</th>
+          <th class="text-end">Plan ₽</th>
+          <th class="text-end">Факт ₽</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="prodBody">
+        {% for p in prod %}
+        <tr>
+          <td class="fw-semibold">{{ p.name }}</td>
+          <td class="text-center text-muted">{{ p.unit }}</td>
+          <td class="text-end">{{ "{:,.0f}".format(p.plan_qty) }}</td>
+          <td class="text-end">{{ "{:,.0f}".format(p.fact_qty) }}</td>
+          <td class="text-center">
+            <div class="pct-bar-wrap">
+              <div class="pct-bar {% if p.pct >= 100 %}pct-green{% elif p.pct >= 80 %}pct-yellow{% else %}pct-red{% endif %}"
+                   style="width:{{ [p.pct,100]|min }}%"></div>
+            </div>
+            <span class="pct-label {% if p.pct >= 100 %}text-success{% elif p.pct >= 80 %}text-warning{% else %}text-danger{% endif %}">
+              {{ "{:.1f}".format(p.pct) }}%
+            </span>
+          </td>
+          <td class="text-end">{{ "{:,.2f}".format(p.cost_per_unit) }}</td>
+          <td class="text-end text-muted">{{ "{:,.0f}".format(p.plan_cost) }}</td>
+          <td class="text-end fw-semibold">{{ "{:,.0f}".format(p.fact_cost) }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger"
+                    onclick="delProduct('{{ period }}', '{{ p.name }}', this)">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">
+          Нет данных. Добавьте продукт.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Модал добавления -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Добавить продукт</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body row g-3">
+        <div class="col-8">
+          <label class="form-label text-muted small">Название продукта</label>
+          <input id="pName" type="text" class="form-control" placeholder="Продукт А">
+        </div>
+        <div class="col-4">
+          <label class="form-label text-muted small">Единица</label>
+          <input id="pUnit" type="text" class="form-control" placeholder="шт">
+        </div>
+        <div class="col-6">
+          <label class="form-label text-muted small">План (кол-во)</label>
+          <input id="pPlanQty" type="number" class="form-control" placeholder="1000">
+        </div>
+        <div class="col-6">
+          <label class="form-label text-muted small">Факт (кол-во)</label>
+          <input id="pFactQty" type="number" class="form-control" placeholder="950">
+        </div>
+        <div class="col-12">
+          <label class="form-label text-muted small">Себестоимость единицы (₽)</label>
+          <input id="pCost" type="number" class="form-control" placeholder="250.00">
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-primary w-100" onclick="addProduct('{{ period }}')">
+          <i class="bi bi-check2-circle"></i> Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

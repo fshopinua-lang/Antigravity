@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% set active = "expenses" %}
+{% block title %}Расходы — {{ period }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <h2><i class="bi bi-cash-stack"></i> Расходы</h2>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExpModal">
+    <i class="bi bi-plus-lg"></i> Добавить статью
+  </button>
+</div>
+
+{% for cat_key, cat_data in exp.items() %}
+{% if cat_key != '_total' %}
+<div class="data-card mb-3">
+  <div class="cat-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold"><i class="bi bi-folder2"></i> {{ cat_data.name }}</span>
+    <span class="text-muted small">
+      план <strong>{{ "{:,.0f}".format(cat_data.plan) }} ₽</strong> &nbsp;|&nbsp;
+      факт <strong>{{ "{:,.0f}".format(cat_data.fact) }} ₽</strong>
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Статья</th>
+          <th class="text-end">План ₽</th>
+          <th class="text-end">Факт ₽</th>
+          <th class="text-end">Отклонение ₽</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in cat_data['items'] %}
+        {% set dev = item.fact_amount - item.plan_amount %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td class="text-end text-muted">{{ "{:,.2f}".format(item.plan_amount) }}</td>
+          <td class="text-end fw-semibold">{{ "{:,.2f}".format(item.fact_amount) }}</td>
+          <td class="text-end {% if dev > 0 %}text-danger{% elif dev < 0 %}text-success{% endif %}">
+            {% if dev > 0 %}+{% endif %}{{ "{:,.2f}".format(dev) }}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger"
+                    onclick="delExpense('{{ period }}','{{ cat_key }}','{{ item.name }}',this)">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted text-center small py-2">Нет статей</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<div class="data-card bg-dark text-white">
+  <div class="d-flex justify-content-between align-items-center px-1">
+    <span class="fw-bold fs-6">ИТОГО РАСХОДОВ</span>
+    <span>
+      план <strong>{{ "{:,.0f}".format(exp['_total']['plan']) }} ₽</strong> &nbsp;|&nbsp;
+      факт <strong>{{ "{:,.0f}".format(exp['_total']['fact']) }} ₽</strong>
+      &nbsp;|&nbsp;
+      {% set dev = exp['_total']['fact'] - exp['_total']['plan'] %}
+      откл <strong class="{% if dev > 0 %}text-warning{% else %}text-success{% endif %}">
+        {% if dev > 0 %}+{% endif %}{{ "{:,.0f}".format(dev) }} ₽
+      </strong>
+    </span>
+  </div>
+</div>
+
+<!-- Модал добавления -->
+<div class="modal fade" id="addExpModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Добавить статью расходов</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body row g-3">
+        <div class="col-12">
+          <label class="form-label text-muted small">Категория</label>
+          <select id="eCat" class="form-select">
+            <option value="raw_materials">Сырьё и материалы</option>
+            <option value="labor">Фонд оплаты труда</option>
+            <option value="overhead">Накладные расходы</option>
+            <option value="depreciation">Амортизация</option>
+            <option value="administrative">Административные расходы</option>
+            <option value="other">Прочие расходы</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label text-muted small">Статья расходов</label>
+          <input id="eName" type="text" class="form-control" placeholder="Например: Электроэнергия">
+        </div>
+        <div class="col-6">
+          <label class="form-label text-muted small">Плановая сумма ₽</label>
+          <input id="ePlan" type="number" class="form-control" placeholder="50000">
+        </div>
+        <div class="col-6">
+          <label class="form-label text-muted small">Фактическая сумма ₽</label>
+          <input id="eFact" type="number" class="form-control" placeholder="52000">
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-primary w-100" onclick="addExpense('{{ period }}')">
+          <i class="bi bi-check2-circle"></i> Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

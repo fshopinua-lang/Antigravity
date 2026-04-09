@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конструктор мерча</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; background:#dde1e8; color:#222; }
+
+  header {
+    background: linear-gradient(135deg,#1a1a2e,#16213e);
+    color:white; padding:13px 28px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.35);
+  }
+  header h1 { font-size:1.25rem; font-weight:700; letter-spacing:1px; }
+  header span { font-size:0.82rem; color:#aaa; margin-left:auto; }
+
+  .layout { display:flex; height:calc(100vh - 52px); }
+
+  /* LEFT */
+  .left-panel {
+    width:208px; background:#fff;
+    border-right:1px solid #e0e0e0;
+    display:flex; flex-direction:column; overflow-y:auto;
+  }
+  .panel-section { padding:13px; border-bottom:1px solid #f0f0f0; }
+  .panel-section h3 {
+    font-size:.67rem; text-transform:uppercase;
+    letter-spacing:1px; color:#999; margin-bottom:9px;
+  }
+  .product-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .product-btn {
+    border:2px solid #e4e4e4; border-radius:9px;
+    padding:9px 5px; cursor:pointer; background:#fafafa;
+    text-align:center; transition:all .15s;
+    font-size:.74rem; color:#444;
+  }
+  .product-btn:hover { border-color:#6c63ff; background:#f3f1ff; }
+  .product-btn.active { border-color:#6c63ff; background:#ede9ff; color:#6c63ff; font-weight:600; }
+  .product-btn .icon { font-size:1.45rem; display:block; margin-bottom:3px; }
+
+  .color-grid { display:flex; flex-wrap:wrap; gap:6px; }
+  .color-swatch {
+    width:25px; height:25px; border-radius:50%; cursor:pointer;
+    border:2px solid transparent; transition:transform .1s;
+  }
+  .color-swatch:hover { transform:scale(1.18); }
+  .color-swatch.active { border-color:#333 !important; transform:scale(1.18); }
+
+  /* CENTER */
+  .center {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at 50% 40%,#d6dae4,#c8cdd8);
+    overflow:hidden; position:relative;
+  }
+  #canvas-container {
+    position:relative;
+    filter:drop-shadow(0 8px 32px rgba(0,0,0,0.22));
+  }
+  #canvas-container canvas { display:block; }
+  .hint {
+    position:absolute; bottom:16px; font-size:.74rem; color:#666;
+    background:rgba(255,255,255,.88); padding:5px 14px; border-radius:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+  }
+
+  /* RIGHT */
+  .right-panel {
+    width:252px; background:#fff;
+    border-left:1px solid #e0e0e0;
+    display:flex; flex-direction:column; overflow-y:auto;
+  }
+  .tabs { display:flex; border-bottom:1px solid #e0e0e0; }
+  .tab {
+    flex:1; padding:10px; border:none; background:none;
+    font-size:.77rem; cursor:pointer; color:#888;
+    border-bottom:2px solid transparent; transition:all .15s;
+  }
+  .tab.active { color:#6c63ff; border-bottom-color:#6c63ff; font-weight:600; }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; padding:13px; }
+
+  .text-input-row { display:flex; gap:7px; margin-bottom:8px; }
+  .text-input-row input[type=text] {
+    flex:1; padding:7px 9px; border:1px solid #ddd;
+    border-radius:8px; font-size:.84rem; outline:none;
+  }
+  .text-input-row input[type=text]:focus { border-color:#6c63ff; }
+  .add-btn {
+    padding:7px 11px; background:#6c63ff; color:#fff;
+    border:none; border-radius:8px; cursor:pointer; font-size:.84rem;
+    transition:background .15s;
+  }
+  .add-btn:hover { background:#5548e0; }
+
+  .prop-label { font-size:.7rem; color:#999; margin-top:9px; margin-bottom:2px; display:block; }
+  select {
+    width:100%; padding:6px 8px; border:1px solid #ddd;
+    border-radius:8px; font-size:.79rem; outline:none;
+  }
+  select:focus { border-color:#6c63ff; }
+  .range-row { display:flex; align-items:center; gap:7px; }
+  .range-row input[type=range] { flex:1; margin:0; padding:0; }
+  .range-row span { font-size:.74rem; color:#666; min-width:34px; text-align:right; }
+  .color-row { display:flex; align-items:center; gap:9px; margin-top:5px; }
+  .color-row input[type=color] {
+    width:34px; height:34px; border:none; border-radius:6px; cursor:pointer; padding:0;
+  }
+  .color-row span { font-size:.79rem; color:#555; }
+  .separator { height:1px; background:#f0f0f0; margin:7px 0; }
+  .tool-btn {
+    display:flex; align-items:center; gap:9px; width:100%;
+    padding:8px 13px; border:none; background:none; cursor:pointer;
+    border-radius:8px; font-size:.83rem; color:#333; transition:background .15s; text-align:left;
+  }
+  .tool-btn:hover { background:#f5f3ff; color:#6c63ff; }
+  label.tool-btn { display:flex; align-items:center; gap:9px; }
+  input[type=file] { display:none; }
+  .danger-btn {
+    display:flex; align-items:center; gap:9px; width:100%;
+    padding:8px 13px; border:none; background:none; cursor:pointer;
+    border-radius:8px; font-size:.83rem; color:#e74c3c; transition:background .15s; text-align:left;
+  }
+  .danger-btn:hover { background:#fff0f0; }
+  .export-btn {
+    margin:13px; padding:11px;
+    background:linear-gradient(135deg,#6c63ff,#48cfad);
+    color:#fff; border:none; border-radius:10px; cursor:pointer;
+    font-size:.88rem; font-weight:600; letter-spacing:.4px;
+    transition:opacity .15s; width:calc(100% - 26px);
+  }
+  .export-btn:hover { opacity:.88; }
+  .style-btns { display:flex; gap:5px; margin-top:4px; }
+  .style-btn {
+    flex:1; padding:6px; background:#f0f0f0; color:#333;
+    border:1px solid #ddd; border-radius:8px; cursor:pointer; font-size:.84rem;
+    transition:all .15s;
+  }
+  .style-btn:hover { background:#ede9ff; border-color:#6c63ff; color:#6c63ff; }
+  .style-btn.on { background:#6c63ff; color:#fff; border-color:#6c63ff; }
+  .layers-list { display:flex; flex-direction:column; gap:4px; }
+  .layer-item {
+    display:flex; align-items:center; gap:7px;
+    padding:6px 9px; border-radius:6px; font-size:.77rem;
+    color:#555; cursor:pointer; border:1px solid transparent; transition:all .1s;
+  }
+  .layer-item:hover { background:#f5f3ff; }
+  .layer-item.selected { border-color:#6c63ff; background:#f0edff; color:#6c63ff; }
+  .layer-item .l-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .layer-item .l-del { opacity:0; font-size:.79rem; cursor:pointer; color:#e74c3c; }
+  .layer-item:hover .l-del { opacity:1; }
+</style>
+</head>
+<body>
+<header>
+  <div style="font-size:1.4rem">🎨</div>
+  <h1>Конструктор</h1>
+  <span>Создайте свой дизайн</span>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="panel-section">
+      <h3>Товар</h3>
+      <div class="product-grid" id="productGrid"></div>
+    </div>
+    <div class="panel-section">
+      <h3>Цвет товара</h3>
+      <div class="color-grid">
+        <div class="color-swatch active" style="background:#f5f5f5;border-color:#ccc!important" onclick="setProductColor('#f5f5f5',this)"></div>
+        <div class="color-swatch" style="background:#1a1a2e" onclick="setProductColor('#1a1a2e',this)"></div>
+        <div class="color-swatch" style="background:#e63946" onclick="setProductColor('#e63946',this)"></div>
+        <div class="color-swatch" style="background:#2563eb" onclick="setProductColor('#2563eb',this)"></div>
+        <div class="color-swatch" style="background:#2a9d8f" onclick="setProductColor('#2a9d8f',this)"></div>
+        <div class="color-swatch" style="background:#f59e0b" onclick="setProductColor('#f59e0b',this)"></div>
+        <div class="color-swatch" style="background:#f97316" onclick="setProductColor('#f97316',this)"></div>
+        <div class="color-swatch" style="background:#7c3aed" onclick="setProductColor('#7c3aed',this)"></div>
+        <div class="color-swatch" style="background:#065f46" onclick="setProductColor('#065f46',this)"></div>
+        <div class="color-swatch" style="background:#be185d" onclick="setProductColor('#be185d',this)"></div>
+      </div>
+    </div>
+    <div class="panel-section" style="flex:1">
+      <h3>Размер</h3>
+      <select style="margin-top:0">
+        <option>XS</option><option>S</option>
+        <option selected>M</option><option>L</option>
+        <option>XL</option><option>XXL</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div id="canvas-container"><canvas id="c"></canvas></div>
+    <div class="hint" id="hint">Добавьте текст или изображение →</div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('tools',this)">Инструменты</button>
+      <button class="tab" onclick="switchTab('layers',this)">Слои</button>
+    </div>
+    <div class="tab-content active" id="tab-tools">
+      <div class="text-input-row">
+        <input type="text" id="textInput" placeholder="Ваш текст..." value="Ваш текст">
+        <button class="add-btn" onclick="addText()">+</button>
+      </div>
+      <span class="prop-label">Шрифт</span>
+      <select id="fontSelect" onchange="applyTextProps()">
+        <option>Arial</option><option>Georgia</option><option>Impact</option>
+        <option>Comic Sans MS</option><option>Courier New</option>
+        <option>Trebuchet MS</option><option>Verdana</option>
+        <option>Times New Roman</option><option>Palatino</option><option>Tahoma</option>
+      </select>
+      <span class="prop-label">Размер шрифта</span>
+      <div class="range-row">
+        <input type="range" id="fontSize" min="10" max="140" value="40"
+          oninput="applyTextProps();fsv.textContent=this.value">
+        <span id="fsv">40</span>
+      </div>
+      <span class="prop-label">Цвет текста</span>
+      <div class="color-row">
+        <input type="color" id="textColor" value="#111111" oninput="applyTextProps()">
+        <span id="textColorHex">#111111</span>
+      </div>
+      <span class="prop-label">Стиль</span>
+      <div class="style-btns">
+        <button class="style-btn" id="btnBold"  onclick="toggleStyle('bold')"><b>B</b></button>
+        <button class="style-btn" id="btnItalic" onclick="toggleStyle('italic')"><i>I</i></button>
+        <button class="style-btn" id="btnUnder"  onclick="toggleStyle('underline')"><u>U</u></button>
+      </div>
+      <div class="separator"></div>
+      <label class="tool-btn" for="imgUpload">🖼️ Загрузить изображение</label>
+      <input type="file" id="imgUpload" accept="image/*" onchange="uploadImage(event)">
+      <div class="separator"></div>
+      <span class="prop-label">Прозрачность</span>
+      <div class="range-row">
+        <input type="range" id="opacityRange" min="0" max="100" value="100"
+          oninput="applyOpacity();opv.textContent=this.value+'%'">
+        <span id="opv">100%</span>
+      </div>
+      <div class="separator"></div>
+      <button class="tool-btn" onclick="bringForward()">⬆️ На передний план</button>
+      <button class="tool-btn" onclick="sendBackward()">⬇️ На задний план</button>
+      <button class="tool-btn" onclick="duplicateSelected()">📋 Дублировать</button>
+      <button class="danger-btn" onclick="deleteSelected()">🗑️ Удалить объект</button>
+      <button class="danger-btn" onclick="clearDesign()">❌ Очистить дизайн</button>
+    </div>
+    <div class="tab-content" id="tab-layers">
+      <div class="layers-list" id="layersList">
+        <div style="color:#aaa;font-size:.79rem;text-align:center;padding:18px">Нет объектов</div>
+      </div>
+    </div>
+    <button class="export-btn" onclick="exportImage()">⬇ Скачать дизайн</button>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+//  PRODUCT DATA
+// ─────────────────────────────────────────────────────────────
+const PRODUCTS = {
+
+  tshirt: {
+    label:'Футболка', icon:'👕', w:500, h:540,
+    // smooth flat-lay silhouette
+    main:'M 210 40 C 186 40 156 50 128 70 L 26 118 C 20 136 22 165 28 198 C 58 185 76 178 84 178 L 84 510 Q 250 520 416 510 L 416 178 C 424 178 442 185 472 198 C 478 165 480 136 474 118 L 372 70 C 344 50 314 40 290 40 C 276 67 262 72 250 72 C 238 72 224 67 210 40 Z',
+    details:[
+      // crew-neck inner ring
+      {d:'M 220 46 C 234 70 250 74 280 46', stroke:'rgba(0,0,0,0.13)', sw:2, fill:'transparent'},
+      // left sleeve fold crease
+      {d:'M 84 185 C 70 192 52 196 36 197', stroke:'rgba(0,0,0,0.10)', sw:1.5, fill:'transparent'},
+      // right sleeve fold crease
+      {d:'M 416 185 C 430 192 448 196 464 197', stroke:'rgba(0,0,0,0.10)', sw:1.5, fill:'transparent'},
+      // bottom hem stitch
+      {d:'M 90 510 Q 250 520 410 510', stroke:'rgba(0,0,0,0.08)', sw:1, fill:'transparent', dash:[4,4]},
+    ],
+    zone:{ left:130, top:128, width:240, height:240 },
+    shadingW:452, shadingH:478
+  },
+
+  hoodie: {
+    label:'Худи', icon:'🧥', w:500, h:560,
+    main:'M 198 36 C 170 36 136 48 106 72 L 18 126 C 12 148 14 180 20 216 C 54 200 74 192 84 192 L 84 530 Q 250 542 416 530 L 416 192 C 426 192 446 200 480 216 C 486 180 488 148 482 126 L 394 72 C 364 48 330 36 302 36 C 290 75 272 86 250 86 C 228 86 210 75 198 36 Z',
+    details:[
+      // hood seam curved
+      {d:'M 210 42 C 228 78 272 78 290 42', stroke:'rgba(0,0,0,0.12)', sw:1.8, fill:'transparent'},
+      // kangaroo pocket
+      {d:'M 175 318 Q 175 308 185 308 L 315 308 Q 325 308 325 318 L 325 378 Q 325 388 315 388 L 185 388 Q 175 388 175 378 Z', stroke:'rgba(0,0,0,0.15)', sw:1.5, fill:'rgba(0,0,0,0.04)'},
+      // pocket divider
+      {d:'M 250 308 L 250 388', stroke:'rgba(0,0,0,0.10)', sw:1.2, fill:'transparent'},
+      // drawstring left
+      {d:'M 218 86 C 215 105 212 116 210 130', stroke:'rgba(0,0,0,0.18)', sw:2.5, fill:'transparent'},
+      // drawstring right
+      {d:'M 282 86 C 285 105 288 116 290 130', stroke:'rgba(0,0,0,0.18)', sw:2.5, fill:'transparent'},
+      // waist rib
+      {d:'M 84 505 Q 250 515 416 505', stroke:'rgba(0,0,0,0.10)', sw:1, fill:'transparent', dash:[3,3]},
+      // sleeve rib lines left
+      {d:'M 28 196 L 25 214', stroke:'rgba(0,0,0,0.10)', sw:1, fill:'transparent'},
+    ],
+    zone:{ left:138, top:145, width:224, height:210 },
+    shadingW:468, shadingH:506
+  },
+
+  mug: {
+    label:'Кружка', icon:'☕', w:460, h:380,
+    // trapezoidal body (slightly wider at top for perspective)
+    main:'M 46 55 L 46 316 Q 46 330 60 330 L 316 330 Q 330 330 330 316 L 330 55 Q 328 42 314 42 L 62 42 Q 46 42 46 55 Z',
+    details:[
+      // handle outer
+      {d:'M 330 108 C 395 108 404 158 404 188 C 404 218 395 268 330 268', stroke:'rgba(0,0,0,0.22)', sw:16, fill:'transparent', cap:'round'},
+      // handle inner highlight
+      {d:'M 330 108 C 395 108 404 158 404 188 C 404 218 395 268 330 268', stroke:'rgba(255,255,255,0.18)', sw:7, fill:'transparent', cap:'round'},
+      // top ellipse (inside dark)
+      {d:'M 46 55 Q 46 42 62 42 L 314 42 Q 330 42 330 55 L 330 86 Q 188 106 46 86 Z', stroke:'none', sw:0, fill:'rgba(0,0,0,0.18)'},
+      // coffee surface inside
+      {d:'M 58 55 Q 188 72 318 55', stroke:'rgba(0,0,0,0.08)', sw:1, fill:'transparent'},
+      // top rim highlight
+      {d:'M 46 42 Q 62 34 188 34 Q 314 34 330 42', stroke:'rgba(255,255,255,0.5)', sw:1.5, fill:'transparent'},
+      // base shadow
+      {d:'M 46 316 Q 46 330 62 330 L 314 330 Q 330 330 330 316 L 330 330 Q 188 346 46 330 Z', stroke:'none', sw:0, fill:'rgba(0,0,0,0.12)'},
+    ],
+    zone:{ left:60, top:76, width:256, height:206 },
+    shadingW:284, shadingH:288,
+    mugMode: true
+  },
+
+  cap: {
+    label:'Кепка', icon:'🧢', w:500, h:330,
+    main:'M 36 224 C 36 70 250 62 250 62 C 250 62 464 70 464 224 Z',
+    details:[
+      // brim shape with perspective
+      {d:'M 22 232 C 22 232 100 296 250 302 C 400 296 478 232 478 232 L 464 224 C 420 268 338 278 250 282 C 162 278 80 268 36 224 Z', stroke:'rgba(0,0,0,0.18)', sw:1, fill:'rgba(0,0,0,0.10)'},
+      // brim front highlight
+      {d:'M 36 224 C 80 268 162 278 250 282 C 338 278 420 268 464 224', stroke:'rgba(255,255,255,0.15)', sw:1.5, fill:'transparent'},
+      // crown seam center
+      {d:'M 250 62 C 254 100 258 160 260 224', stroke:'rgba(0,0,0,0.10)', sw:1.2, fill:'transparent', dash:[5,4]},
+      // button top
+      {d:'M 236 62 C 236 54 264 54 264 62 Z', stroke:'rgba(0,0,0,0.2)', sw:1, fill:'rgba(0,0,0,0.12)'},
+      // sweatband line
+      {d:'M 50 218 C 100 240 180 248 250 248 C 320 248 400 240 450 218', stroke:'rgba(0,0,0,0.12)', sw:1.5, fill:'transparent'},
+    ],
+    zone:{ left:132, top:76, width:236, height:130 },
+    shadingW:428, shadingH:162,
+    capMode: true
+  },
+
+  bag: {
+    label:'Рюкзак', icon:'🎒', w:440, h:500,
+    main:'M 42 100 C 42 88 52 80 64 80 L 376 80 C 388 80 398 88 398 100 L 398 436 C 398 448 388 456 376 456 L 64 456 C 52 456 42 448 42 436 Z',
+    details:[
+      // shoulder straps
+      {d:'M 130 80 C 130 40 160 30 220 30 L 220 80', stroke:'rgba(0,0,0,0.22)', sw:14, fill:'transparent', cap:'round'},
+      {d:'M 310 80 C 310 40 280 30 220 30', stroke:'rgba(0,0,0,0.22)', sw:14, fill:'transparent', cap:'round'},
+      // strap highlight
+      {d:'M 130 80 C 130 40 160 30 220 30 L 220 80', stroke:'rgba(255,255,255,0.12)', sw:5, fill:'transparent', cap:'round'},
+      {d:'M 310 80 C 310 40 280 30 220 30', stroke:'rgba(255,255,255,0.12)', sw:5, fill:'transparent', cap:'round'},
+      // main zipper
+      {d:'M 58 120 L 382 120', stroke:'rgba(0,0,0,0.2)', sw:2, fill:'transparent', dash:[6,3]},
+      // front pocket
+      {d:'M 82 270 Q 82 258 94 258 L 346 258 Q 358 258 358 270 L 358 390 Q 358 402 346 402 L 94 402 Q 82 402 82 390 Z', stroke:'rgba(0,0,0,0.16)', sw:1.5, fill:'rgba(0,0,0,0.05)'},
+      // pocket zipper
+      {d:'M 94 278 L 346 278', stroke:'rgba(0,0,0,0.16)', sw:1.5, fill:'transparent', dash:[5,3]},
+      // zipper pull main
+      {d:'M 220 118 L 220 128 L 228 132 L 220 136 L 212 132 L 220 128', stroke:'rgba(0,0,0,0.3)', sw:1.5, fill:'rgba(180,150,80,0.9)'},
+      // top handle
+      {d:'M 185 80 C 185 60 255 60 255 80', stroke:'rgba(0,0,0,0.25)', sw:8, fill:'transparent', cap:'round'},
+    ],
+    zone:{ left:80, top:128, width:280, height:190 },
+    shadingW:356, shadingH:376
+  },
+
+  phone: {
+    label:'Чехол', icon:'📱', w:290, h:570,
+    main:'M 20 44 C 20 12 48 8 72 8 L 218 8 C 242 8 270 12 270 44 L 270 526 C 270 558 242 562 218 562 L 72 562 C 48 562 20 558 20 526 Z',
+    details:[
+      // inner screen bezel
+      {d:'M 32 52 C 32 36 44 32 60 32 L 230 32 C 246 32 258 36 258 52 L 258 518 C 258 534 246 538 230 538 L 60 538 C 44 538 32 534 32 518 Z', stroke:'rgba(0,0,0,0.12)', sw:1.2, fill:'rgba(0,0,0,0.04)'},
+      // camera module
+      {d:'M 118 16 C 118 12 124 10 130 10 L 160 10 C 166 10 172 12 172 16 L 172 26 C 172 30 166 32 160 32 L 130 32 C 124 32 118 30 118 26 Z', stroke:'rgba(0,0,0,0.25)', sw:1, fill:'rgba(30,30,30,0.9)'},
+      // camera lens
+      {d:'M 132 12 C 132 12 158 12 158 20 C 158 28 132 28 132 20 Z', stroke:'rgba(80,120,200,0.4)', sw:1, fill:'rgba(20,20,35,0.95)'},
+      // camera lens ring
+      {d:'M 136 14 C 136 14 154 14 154 20 C 154 26 136 26 136 20 Z', stroke:'rgba(100,140,220,0.35)', sw:1, fill:'transparent'},
+      // power button right
+      {d:'M 270 160 L 278 160 L 278 210 L 270 210', stroke:'rgba(0,0,0,0.2)', sw:1, fill:'rgba(0,0,0,0.15)'},
+      // volume up button left
+      {d:'M 20 148 L 12 148 L 12 188 L 20 188', stroke:'rgba(0,0,0,0.2)', sw:1, fill:'rgba(0,0,0,0.15)'},
+      // volume down button left
+      {d:'M 20 200 L 12 200 L 12 240 L 20 240', stroke:'rgba(0,0,0,0.2)', sw:1, fill:'rgba(0,0,0,0.15)'},
+      // speaker bottom
+      {d:'M 120 548 L 170 548', stroke:'rgba(0,0,0,0.2)', sw:3, fill:'transparent', cap:'round'},
+      // speaker dots
+      {d:'M 110 548 L 112 548', stroke:'rgba(0,0,0,0.18)', sw:3, fill:'transparent', cap:'round'},
+      {d:'M 178 548 L 180 548', stroke:'rgba(0,0,0,0.18)', sw:3, fill:'transparent', cap:'round'},
+      // charge port
+      {d:'M 132 553 C 132 551 144 550 145 551 L 145 555 C 145 557 132 557 132 555 Z', stroke:'rgba(0,0,0,0.2)', sw:1, fill:'rgba(0,0,0,0.2)'},
+    ],
+    zone:{ left:36, top:56, width:218, height:398 },
+    shadingW:250, shadingH:554
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+//  HELPERS – gradients
+// ─────────────────────────────────────────────────────────────
+function sideShadingGrad(w) {
+  return new fabric.Gradient({
+    type:'linear', gradientUnits:'pixels',
+    coords:{ x1:0, y1:0, x2:w, y2:0 },
+    colorStops:[
+      {offset:0,    color:'rgba(0,0,0,0.26)'},
+      {offset:0.14, color:'rgba(0,0,0,0.09)'},
+      {offset:0.5,  color:'rgba(0,0,0,0)'},
+      {offset:0.86, color:'rgba(0,0,0,0.09)'},
+      {offset:1,    color:'rgba(0,0,0,0.26)'}
+    ]
+  });
+}
+function topHighlightGrad(w, h) {
+  return new fabric.Gradient({
+    type:'linear', gradientUnits:'pixels',
+    coords:{ x1:0, y1:0, x2:0, y2:h * 0.55 },
+    colorStops:[
+      {offset:0,   color:'rgba(255,255,255,0.32)'},
+      {offset:0.4, color:'rgba(255,255,255,0.06)'},
+      {offset:1,   color:'rgba(255,255,255,0)'}
+    ]
+  });
+}
+function mugBodyGrad(w) {
+  // strong cylindrical shading for mug
+  return new fabric.Gradient({
+    type:'linear', gradientUnits:'pixels',
+    coords:{ x1:0, y1:0, x2:w, y2:0 },
+    colorStops:[
+      {offset:0,    color:'rgba(0,0,0,0.40)'},
+      {offset:0.10, color:'rgba(0,0,0,0.16)'},
+      {offset:0.28, color:'rgba(255,255,255,0.12)'},
+      {offset:0.50, color:'rgba(255,255,255,0.06)'},
+      {offset:0.72, color:'rgba(255,255,255,0.12)'},
+      {offset:0.90, color:'rgba(0,0,0,0.16)'},
+      {offset:1,    color:'rgba(0,0,0,0.40)'}
+    ]
+  });
+}
+function capShadingGrad(w, h) {
+  return new fabric.Gradient({
+    type:'linear', gradientUnits:'pixels',
+    coords:{ x1:0, y1:0, x2:0, y2:h },
+    colorStops:[
+      {offset:0,   color:'rgba(255,255,255,0.28)'},
+      {offset:0.3, color:'rgba(255,255,255,0.06)'},
+      {offset:0.7, color:'rgba(0,0,0,0.04)'},
+      {offset:1,   color:'rgba(0,0,0,0.18)'}
+    ]
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────────
+let canvas       = null;
+let productColor = '#f5f5f5';
+let currentProduct = 'tshirt';
+let productObjs  = [];
+let zoneRect     = null;
+let layerSeed    = 0;
+
+const NI = { selectable:false, evented:false, hoverCursor:'default', excludeFromExport:true };
+
+// ─────────────────────────────────────────────────────────────
+//  BUILD PRODUCT BUTTONS
+// ─────────────────────────────────────────────────────────────
+(function() {
+  const grid = document.getElementById('productGrid');
+  Object.keys(PRODUCTS).forEach(key => {
+    const p = PRODUCTS[key];
+    const div = document.createElement('div');
+    div.className = 'product-btn' + (key==='tshirt'?' active':'');
+    div.innerHTML = `<span class="icon">${p.icon}</span>${p.label}`;
+    div.onclick = () => selectProduct(key, div);
+    grid.appendChild(div);
+  });
+})();
+
+// ─────────────────────────────────────────────────────────────
+//  INIT CANVAS
+// ─────────────────────────────────────────────────────────────
+function initCanvas() {
+  const p   = PRODUCTS[currentProduct];
+  const con = document.getElementById('canvas-container');
+
+  if (canvas) canvas.dispose();
+  const old = document.getElementById('c');
+  if (old) old.remove();
+  const el = document.createElement('canvas');
+  el.id = 'c';
+  con.appendChild(el);
+
+  canvas = new fabric.Canvas('c', {
+    width:p.w, height:p.h,
+    preserveObjectStacking:true
+  });
+  con.style.width  = p.w + 'px';
+  con.style.height = p.h + 'px';
+
+  canvas.on('selection:created',  syncUI);
+  canvas.on('selection:updated',  syncUI);
+  canvas.on('selection:cleared',  syncUI);
+  canvas.on('object:added',   () => renderLayers());
+  canvas.on('object:removed', () => renderLayers());
+  canvas.on('object:modified',() => renderLayers());
+
+  drawProduct();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  DRAW PRODUCT
+// ─────────────────────────────────────────────────────────────
+function drawProduct() {
+  const p = PRODUCTS[currentProduct];
+  productObjs.forEach(o => canvas.remove(o));
+  if (zoneRect) canvas.remove(zoneRect);
+  productObjs = [];
+
+  // ── 1. Drop shadow layer (invisible path, just for shadow)
+  const shadowPath = new fabric.Path(p.main, {
+    ...NI,
+    fill: 'rgba(0,0,0,0.0)',
+    stroke: 'transparent',
+    shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.28)', blur:28, offsetX:0, offsetY:10 })
+  });
+  canvas.add(shadowPath);
+  productObjs.push(shadowPath);
+
+  // ── 2. Main color fill
+  const mainPath = new fabric.Path(p.main, {
+    ...NI,
+    fill: productColor,
+    stroke: '#b0b0b0',
+    strokeWidth: 1.2
+  });
+  canvas.add(mainPath);
+  productObjs.push(mainPath);
+
+  // ── 3. Shading overlay (same path, gradient fill)
+  const sw = p.shadingW || p.w;
+  const sh = p.shadingH || p.h;
+  const shadeFill = p.mugMode  ? mugBodyGrad(sw)
+                  : p.capMode  ? capShadingGrad(sw, sh)
+                  : sideShadingGrad(sw);
+  const shadePath = new fabric.Path(p.main, {
+    ...NI, fill: shadeFill, stroke: 'transparent'
+  });
+  canvas.add(shadePath);
+  productObjs.push(shadePath);
+
+  // ── 4. Top highlight overlay
+  if (!p.mugMode) {
+    const hiPath = new fabric.Path(p.main, {
+      ...NI, fill: topHighlightGrad(sw, sh), stroke:'transparent'
+    });
+    canvas.add(hiPath);
+    productObjs.push(hiPath);
+  }
+
+  // ── 5. Detail paths
+  if (p.details) {
+    p.details.forEach(d => {
+      const obj = new fabric.Path(d.d, {
+        ...NI,
+        fill:        d.fill || 'transparent',
+        stroke:      d.stroke || 'transparent',
+        strokeWidth: d.sw || 1,
+        strokeLineCap:  d.cap || 'butt',
+        strokeLineJoin: 'round',
+        strokeDashArray: d.dash || null
+      });
+      canvas.add(obj);
+      productObjs.push(obj);
+    });
+  }
+
+  // ── 6. Design zone dashed rect
+  const z = p.zone;
+  zoneRect = new fabric.Rect({
+    ...NI,
+    left:z.left, top:z.top, width:z.width, height:z.height,
+    fill:'transparent',
+    stroke:'rgba(108,99,255,0.5)',
+    strokeWidth:1.5,
+    strokeDashArray:[6,4],
+    rx:3, ry:3
+  });
+  canvas.add(zoneRect);
+  productObjs.push(zoneRect);
+
+  productObjs.forEach(o => canvas.sendToBack(o));
+  canvas.renderAll();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SELECT PRODUCT
+// ─────────────────────────────────────────────────────────────
+function selectProduct(key, btn) {
+  currentProduct = key;
+  document.querySelectorAll('.product-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const saved = canvas ? canvas.getObjects().filter(o => !o.excludeFromExport) : [];
+  initCanvas();
+  saved.forEach(o => canvas.add(o));
+  canvas.renderAll();
+  renderLayers();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  PRODUCT COLOR
+// ─────────────────────────────────────────────────────────────
+function setProductColor(color, el) {
+  productColor = color;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  // productObjs[1] = main color path (index 0 is shadow layer)
+  if (productObjs[1]) { productObjs[1].set('fill', color); canvas.renderAll(); }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  ADD TEXT
+// ─────────────────────────────────────────────────────────────
+function addText() {
+  const z    = PRODUCTS[currentProduct].zone;
+  const txt  = document.getElementById('textInput').value.trim() || 'Текст';
+  const font = document.getElementById('fontSelect').value;
+  const size = parseInt(document.getElementById('fontSize').value);
+  const col  = document.getElementById('textColor').value;
+
+  const text = new fabric.IText(txt, {
+    left: z.left + z.width / 2,
+    top:  z.top  + z.height / 2,
+    originX:'center', originY:'center',
+    fontFamily:font, fontSize:size, fill:col,
+    editable:true,
+    _layerName:'Текст: ' + txt.slice(0,14),
+    _layerId: ++layerSeed
+  });
+  canvas.add(text);
+  canvas.setActiveObject(text);
+  canvas.renderAll();
+  document.getElementById('hint').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────
+//  TEXT PROPS
+// ─────────────────────────────────────────────────────────────
+function applyTextProps() {
+  const obj = canvas && canvas.getActiveObject();
+  const hex = document.getElementById('textColor').value;
+  document.getElementById('textColorHex').textContent = hex;
+  if (!obj || obj.type !== 'i-text') return;
+  obj.set({
+    fontFamily: document.getElementById('fontSelect').value,
+    fontSize:   parseInt(document.getElementById('fontSize').value),
+    fill:       hex
+  });
+  canvas.renderAll();
+}
+
+function toggleStyle(style) {
+  const obj = canvas && canvas.getActiveObject();
+  if (style==='bold')      { if(obj&&obj.type==='i-text') obj.set('fontWeight', obj.fontWeight==='bold'?'normal':'bold'); document.getElementById('btnBold').classList.toggle('on'); }
+  if (style==='italic')    { if(obj&&obj.type==='i-text') obj.set('fontStyle',  obj.fontStyle==='italic'?'normal':'italic'); document.getElementById('btnItalic').classList.toggle('on'); }
+  if (style==='underline') { if(obj&&obj.type==='i-text') obj.set('underline',  !obj.underline); document.getElementById('btnUnder').classList.toggle('on'); }
+  if (obj) canvas.renderAll();
+}
+
+function syncUI() {
+  const obj = canvas && canvas.getActiveObject();
+  renderLayers();
+  if (!obj) return;
+  const v = Math.round(obj.opacity * 100);
+  document.getElementById('opacityRange').value = v;
+  document.getElementById('opv').textContent = v + '%';
+  if (obj.type === 'i-text') {
+    if (obj.fontFamily) document.getElementById('fontSelect').value = obj.fontFamily;
+    if (obj.fontSize) { document.getElementById('fontSize').value = obj.fontSize; document.getElementById('fsv').textContent = obj.fontSize; }
+    const c = obj.fill || '#111';
+    document.getElementById('textColor').value = toHex(c);
+    document.getElementById('textColorHex').textContent = toHex(c);
+    document.getElementById('btnBold').classList.toggle('on',   obj.fontWeight==='bold');
+    document.getElementById('btnItalic').classList.toggle('on', obj.fontStyle==='italic');
+    document.getElementById('btnUnder').classList.toggle('on',  !!obj.underline);
+  }
+}
+function toHex(c) {
+  if (!c || c.startsWith('#')) return c || '#111111';
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.fillStyle = c; return ctx.fillStyle;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  IMAGE UPLOAD
+// ─────────────────────────────────────────────────────────────
+function uploadImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    fabric.Image.fromURL(ev.target.result, img => {
+      const z = PRODUCTS[currentProduct].zone;
+      const scale = Math.min((z.width*.85)/img.width, (z.height*.85)/img.height);
+      img.set({
+        left:z.left+z.width/2, top:z.top+z.height/2,
+        originX:'center', originY:'center',
+        scaleX:scale, scaleY:scale,
+        _layerName:'🖼 '+file.name.slice(0,14),
+        _layerId:++layerSeed
+      });
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+      document.getElementById('hint').style.display = 'none';
+    });
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+// ─────────────────────────────────────────────────────────────
+//  OBJECT OPS
+// ─────────────────────────────────────────────────────────────
+function applyOpacity() {
+  const obj = canvas && canvas.getActiveObject();
+  if (obj) { obj.set('opacity', parseInt(document.getElementById('opacityRange').value)/100); canvas.renderAll(); }
+}
+function bringForward()  { const o=canvas&&canvas.getActiveObject(); if(o){canvas.bringForward(o);renderLayers();} }
+function sendBackward()  { const o=canvas&&canvas.getActiveObject(); if(o){canvas.sendBackwards(o,true);renderLayers();} }
+function duplicateSelected() {
+  const o = canvas && canvas.getActiveObject();
+  if (!o) return;
+  o.clone(cl => {
+    cl.set({left:o.left+16, top:o.top+16, _layerName:(o._layerName||'Объект')+' (копия)', _layerId:++layerSeed});
+    canvas.add(cl); canvas.setActiveObject(cl); canvas.renderAll();
+  });
+}
+function deleteSelected() {
+  const o = canvas && canvas.getActiveObject();
+  if (o) { canvas.remove(o); canvas.renderAll(); }
+}
+function clearDesign() {
+  if (!confirm('Очистить все объекты дизайна?')) return;
+  canvas.getObjects().filter(o=>!o.excludeFromExport).forEach(o=>canvas.remove(o));
+  canvas.renderAll();
+  document.getElementById('hint').style.display = 'block';
+}
+function designObjects() { return canvas ? canvas.getObjects().filter(o=>!o.excludeFromExport) : []; }
+
+// ─────────────────────────────────────────────────────────────
+//  LAYERS
+// ─────────────────────────────────────────────────────────────
+function renderLayers() {
+  const list   = document.getElementById('layersList');
+  const active = canvas && canvas.getActiveObject();
+  const objs   = designObjects();
+  if (!objs.length) {
+    list.innerHTML = '<div style="color:#aaa;font-size:.79rem;text-align:center;padding:18px">Нет объектов</div>';
+    return;
+  }
+  list.innerHTML = [...objs].reverse().map((o, i) => {
+    const ri   = objs.length - 1 - i;
+    const icon = o.type==='i-text' ? '✏️' : '🖼️';
+    const name = o._layerName || (o.type==='i-text'?'Текст':'Изображение');
+    return `<div class="layer-item${o===active?' selected':''}" onclick="selLayer(${ri})">
+      <span>${icon}</span>
+      <span class="l-name">${name}</span>
+      <span class="l-del" onclick="event.stopPropagation();rmLayer(${ri})">✕</span>
+    </div>`;
+  }).join('');
+}
+function selLayer(idx) { const o=designObjects()[idx]; if(o){canvas.setActiveObject(o);canvas.renderAll();renderLayers();} }
+function rmLayer(idx)  { const o=designObjects()[idx]; if(o){canvas.remove(o);canvas.renderAll();} }
+
+// ─────────────────────────────────────────────────────────────
+//  TABS
+// ─────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name==='layers') renderLayers();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  EXPORT
+// ─────────────────────────────────────────────────────────────
+function exportImage() {
+  if (zoneRect) zoneRect.set('visible', false);
+  canvas.renderAll();
+  const url = canvas.toDataURL({ format:'png', multiplier:2 });
+  if (zoneRect) zoneRect.set('visible', true);
+  canvas.renderAll();
+  const a = document.createElement('a');
+  a.download = 'merch-design.png';
+  a.href = url;
+  a.click();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  KEYBOARD
+// ─────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if ((e.key==='Delete'||e.key==='Backspace') && canvas) {
+    const o = canvas.getActiveObject();
+    if (o && o.type!=='i-text') { canvas.remove(o); canvas.renderAll(); }
+  }
+  if (e.ctrlKey && e.key==='d') { e.preventDefault(); duplicateSelected(); }
+  if (e.ctrlKey && e.key==='z') {
+    const objs = designObjects();
+    if (objs.length) { canvas.remove(objs[objs.length-1]); canvas.renderAll(); }
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+//  START
+// ─────────────────────────────────────────────────────────────
+initCanvas();
+</script>
+</body>
+</html>

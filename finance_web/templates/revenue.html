@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% set active = "revenue" %}
+{% block title %}Выручка — {{ period }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <h2><i class="bi bi-currency-dollar"></i> Выручка</h2>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRevModal">
+    <i class="bi bi-plus-lg"></i> Добавить
+  </button>
+</div>
+
+<div class="data-card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Продукт / Услуга</th>
+          <th class="text-end">Цена ₽</th>
+          <th class="text-end">Количество</th>
+          <th class="text-end">Выручка ₽</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in rev['items'] %}
+        <tr>
+          <td class="fw-semibold">{{ item.product }}</td>
+          <td class="text-end">{{ "{:,.2f}".format(item.price) }}</td>
+          <td class="text-end">{{ "{:,.2f}".format(item.qty) }}</td>
+          <td class="text-end fw-bold text-success">{{ "{:,.2f}".format(item.total) }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger"
+                    onclick="delRevenue('{{ period }}','{{ item.product }}',this)">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">
+          Нет данных. Добавьте выручку.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+      {% if rev['items'] %}
+      <tfoot>
+        <tr class="table-dark fw-bold">
+          <td colspan="3">ИТОГО</td>
+          <td class="text-end">{{ "{:,.2f}".format(rev.total) }} ₽</td>
+          <td></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="addRevModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Добавить выручку</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body row g-3">
+        <div class="col-12">
+          <label class="form-label text-muted small">Продукт / Услуга</label>
+          <input id="rProduct" type="text" class="form-control" placeholder="Продукт А">
+        </div>
+        <div class="col-6">
+          <label class="form-label text-muted small">Цена реализации ₽</label>
+          <input id="rPrice" type="number" class="form-control" placeholder="450">
+        </div>
+        <div class="col-6">
+          <label class="form-label text-muted small">Количество</label>
+          <input id="rQty" type="number" class="form-control" placeholder="950">
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-primary w-100" onclick="addRevenue('{{ period }}')">
+          <i class="bi bi-check2-circle"></i> Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block title %}Дашборд — {{ period }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-speedometer2"></i> Дашборд</h2>
+</div>
+
+<!-- KPI карточки -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="kpi-label">Выручка</div>
+      <div class="kpi-value">{{ "{:,.0f}".format(pnl.revenue) }} ₽</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card kpi-orange">
+      <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
+      <div class="kpi-label">Расходы</div>
+      <div class="kpi-value">{{ "{:,.0f}".format(pnl.total_expenses) }} ₽</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card {% if pnl.gross_profit >= 0 %}kpi-green{% else %}kpi-red{% endif %}">
+      <div class="kpi-icon"><i class="bi bi-graph-up"></i></div>
+      <div class="kpi-label">Валовая прибыль</div>
+      <div class="kpi-value">{{ "{:,.0f}".format(pnl.gross_profit) }} ₽</div>
+      <div class="kpi-sub">Маржа {{ "{:.1f}".format(pnl.gross_margin) }}%</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card {% if pnl.net_profit >= 0 %}kpi-green{% else %}kpi-red{% endif %}">
+      <div class="kpi-icon"><i class="bi bi-trophy"></i></div>
+      <div class="kpi-label">Чистая прибыль</div>
+      <div class="kpi-value">{{ "{:,.0f}".format(pnl.net_profit) }} ₽</div>
+      <div class="kpi-sub">Маржа {{ "{:.1f}".format(pnl.net_margin) }}%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Диаграммы -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="chart-card">
+      <div class="chart-title">Структура расходов</div>
+      <canvas id="expenseChart" height="260"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="chart-card">
+      <div class="chart-title">Производство: план vs факт</div>
+      <canvas id="prodChart" height="260"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- P&L краткий -->
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="chart-card">
+      <div class="chart-title">P&L — ключевые показатели</div>
+      <canvas id="pnlChart" height="200"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="summary-card">
+      <div class="chart-title">Быстрая сводка</div>
+      <table class="table table-sm summary-table">
+        <tr><td>Продуктов</td><td class="text-end fw-bold">{{ data.production|length }}</td></tr>
+        <tr><td>Статей расходов</td>
+            <td class="text-end fw-bold">{{ exp_count }}</td></tr>
+        <tr><td>Себестоимость</td><td class="text-end fw-bold">{{ "{:,.0f}".format(pnl.cost_of_goods) }} ₽</td></tr>
+        <tr><td>Рентабельность</td>
+            <td class="text-end fw-bold {% if pnl.net_margin >= 0 %}text-success{% else %}text-danger{% endif %}">
+              {{ "{:.1f}".format(pnl.net_margin) }}%
+            </td></tr>
+      </table>
+      <div class="d-grid mt-3">
+        <a href="#" class="btn btn-success" onclick="exportReport('{{ period }}')">
+          <i class="bi bi-file-earmark-excel"></i> Скачать Excel-отчёт
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const period = {{ period|tojson }};
+loadCharts(period);
+</script>
+{% endblock %}

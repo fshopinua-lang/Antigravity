@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERAI — Інтернет-магазин жіночих суконь</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+        .badge-discount { background-color: #ef4444; color: white; font-weight: 700; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+
+    <!-- Top Banner -->
+    <div class="bg-amber-100 text-amber-900 text-center py-2 text-xs font-semibold tracking-wide">
+        Безкоштовна доставка Новою Поштою від двох суконь 🚚
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="/shop" class="text-2xl font-black tracking-widest text-black">
+                    MERAI<span class="text-rose-500">.</span>
+                </a>
+
+                <!-- Nav links -->
+                <nav class="hidden md:flex space-x-6 text-sm font-medium text-gray-700">
+                    <a href="/shop" class="text-rose-600 font-bold">Усі сукні</a>
+                    <a href="/shop?cat=plus" class="hover:text-rose-600">Великі розміри</a>
+                    <a href="/shop?cat=midi" class="hover:text-rose-600">Міді</a>
+                    <a href="/shop?cat=maxi" class="hover:text-rose-600">Максі</a>
+                    <a href="/shop?cat=shtapel" class="hover:text-rose-600">Зі штапелю</a>
+                </nav>
+
+                <!-- Phone & Cart -->
+                <div class="flex items-center space-x-4">
+                    <a href="tel:0800202075" class="hidden sm:flex items-center text-xs font-bold text-gray-800 hover:text-rose-600">
+                        <i class="fa-solid fa-phone mr-1.5 text-rose-500"></i> 0800 20 20 75
+                    </a>
+                    <button onclick="toggleCart()" class="relative bg-gray-100 hover:bg-gray-200 p-2.5 rounded-full transition">
+                        <i class="fa-solid fa-bag-shopping text-gray-800 text-lg"></i>
+                        <span id="cart-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Title & Filters -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Каталог суконь</h1>
+                <p class="text-sm text-gray-500 mt-1">Шиємо самі в Україні — від S до 5XL</p>
+            </div>
+
+            <!-- Category Chips -->
+            <div class="flex flex-wrap gap-2 text-xs">
+                <a href="/shop" class="px-3 py-1.5 rounded-full bg-black text-white font-medium">Усі ({{ products|length }})</a>
+                <a href="#" class="px-3 py-1.5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium">Великі розміри</a>
+                <a href="#" class="px-3 py-1.5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium">Літні</a>
+                <a href="#" class="px-3 py-1.5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium">Штапель</a>
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for item in products %}
+            <div class="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col group">
+                <!-- Image Container -->
+                <a href="/shop/p/{{ item.slug }}" class="relative aspect-[3/4] bg-gray-100 overflow-hidden block">
+                    <img src="{{ item.images[0] }}" alt="{{ item.title }}" class="w-full h-full object-cover object-top group-hover:scale-105 transition duration-500">
+                    <span class="absolute top-3 left-3 badge-discount">-48%</span>
+                    <span class="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm text-gray-800 text-[10px] font-bold px-2 py-1 rounded">
+                        {{ item.fabric }}
+                    </span>
+                </a>
+
+                <!-- Product Info -->
+                <div class="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center text-xs text-amber-500 font-semibold mb-1">
+                            <i class="fa-solid fa-star text-xs mr-1"></i> {{ item.rating }} <span class="text-gray-400 font-normal ml-1">({{ item.reviews_count }})</span>
+                        </div>
+                        <a href="/shop/p/{{ item.slug }}" class="font-bold text-gray-900 hover:text-rose-600 line-clamp-1 transition">
+                            {{ item.title }}
+                        </a>
+                        <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ item.short_desc }}</p>
+                    </div>
+
+                    <!-- Price & Buy -->
+                    <div class="mt-4 pt-3 border-t flex items-center justify-between">
+                        <div>
+                            <span class="text-lg font-black text-rose-600">{{ item.price }} грн</span>
+                            <span class="text-xs text-gray-400 line-through ml-1.5">{{ item.old_price }} грн</span>
+                        </div>
+                        <a href="/shop/p/{{ item.slug }}" class="bg-black hover:bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+                            Обрати
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Cart Drawer Modal -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleCart()"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col z-10">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Кошик</h3>
+                <button onclick="toggleCart()" class="text-gray-400 hover:text-black text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="cart-items" class="p-4 flex-1 overflow-y-auto space-y-4">
+                <p class="text-center text-gray-400 py-12">У кошику поки порожньо</p>
+            </div>
+
+            <div class="p-4 border-t bg-gray-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-medium text-gray-700">Разом:</span>
+                    <span id="cart-total" class="text-xl font-bold text-rose-600">0 грн</span>
+                </div>
+                <button onclick="submitOrder()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-200 transition">
+                    Оформити замовлення
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 mt-20 text-xs">
+        <div class="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <h4 class="text-white text-lg font-black tracking-widest mb-3">MERAI</h4>
+                <p class="text-gray-400 leading-relaxed">Інтернет-магазин жіночих суконь власного виробництва. Доставка по всей Україні 1-3 дні.</p>
+            </div>
+            <div>
+                <h5 class="text-white font-bold mb-3">Контакти</h5>
+                <p class="text-gray-400">Гаряча лінія: <a href="tel:0800202075" class="text-white font-semibold">0800 20 20 75</a> (безкоштовно)</p>
+                <p class="text-gray-400 mt-1">Графік: Щодня 9:00 – 20:00</p>
+            </div>
+            <div>
+                <h5 class="text-white font-bold mb-3">Доставка & Оплата</h5>
+                <p class="text-gray-400">Нова Пошта (відділення, поштомат). Оплата при отриманні або карткой.</p>
+            </div>
+        </div>
+        <div class="border-t border-gray-800 text-center py-4 text-gray-500">
+            © 2026 MERAI. Всі права захищені.
+        </div>
+    </footer>
+
+    <script>
+        let cart = JSON.parse(localStorage.getItem('merai_cart') || '[]');
+
+        function updateCartUI() {
+            const countEl = document.getElementById('cart-count');
+            const itemsEl = document.getElementById('cart-items');
+            const totalEl = document.getElementById('cart-total');
+
+            countEl.innerText = cart.reduce((acc, item) => acc + item.qty, 0);
+
+            if (cart.length === 0) {
+                itemsEl.innerHTML = '<p class="text-center text-gray-400 py-12">У кошику поки порожньо</p>';
+                totalEl.innerText = '0 грн';
+                return;
+            }
+
+            let html = '';
+            let total = 0;
+            cart.forEach((item, index) => {
+                total += item.price * item.qty;
+                html += `
+                    <div class="flex items-center space-x-3 bg-gray-50 p-3 rounded-xl">
+                        <img src="${item.img}" class="w-16 h-20 object-cover rounded-lg">
+                        <div class="flex-1">
+                            <h5 class="text-xs font-bold text-gray-900">${item.title}</h5>
+                            <p class="text-[11px] text-gray-500">Розмір: ${item.size}</p>
+                            <span class="text-xs font-bold text-rose-600">${item.price} грн x ${item.qty}</span>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500 text-sm p-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            itemsEl.innerHTML = html;
+            totalEl.innerText = total + ' грн';
+        }
+
+        function toggleCart() {
+            const drawer = document.getElementById('cart-drawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            localStorage.setItem('merai_cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        function submitOrder() {
+            if (cart.length === 0) {
+                alert('Додайте хоча б один товар у кошик');
+                return;
+            }
+            fetch('/api/shop/checkout', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ items: cart })
+            }).then(r => r.json()).then(data => {
+                if (data.ok) {
+                    alert('Дякуємо! Ваше замовление #' + data.order_id + ' прийнято!');
+                    cart = [];
+                    localStorage.removeItem('merai_cart');
+                    updateCartUI();
+                    toggleCart();
+                }
+            });
+        }
+
+        updateCartUI();
+    </script>
+</body>
+</html>

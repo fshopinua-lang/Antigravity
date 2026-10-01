@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.title }} — MERAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+        .badge-discount { background-color: #ef4444; color: white; font-weight: 700; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+
+    <!-- Top Banner -->
+    <div class="bg-amber-100 text-amber-900 text-center py-2 text-xs font-semibold">
+        Безкоштовна доставка Новою Поштою від двох суконь 🚚
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/shop" class="text-2xl font-black tracking-widest text-black">
+                    MERAI<span class="text-rose-500">.</span>
+                </a>
+                <nav class="hidden md:flex space-x-6 text-sm font-medium text-gray-700">
+                    <a href="/shop" class="text-rose-600 font-bold">Усі сукні</a>
+                    <a href="/shop?cat=plus" class="hover:text-rose-600">Великі розміри</a>
+                    <a href="/shop?cat=midi" class="hover:text-rose-600">Міді</a>
+                    <a href="/shop?cat=maxi" class="hover:text-rose-600">Максі</a>
+                    <a href="/shop?cat=shtapel" class="hover:text-rose-600">Зі штапелю</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <a href="tel:0800202075" class="hidden sm:flex items-center text-xs font-bold text-gray-800 hover:text-rose-600">
+                        <i class="fa-solid fa-phone mr-1.5 text-rose-500"></i> 0800 20 20 75
+                    </a>
+                    <button onclick="toggleCart()" class="relative bg-gray-100 hover:bg-gray-200 p-2.5 rounded-full transition">
+                        <i class="fa-solid fa-bag-shopping text-gray-800 text-lg"></i>
+                        <span id="cart-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Product Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Breadcrumbs -->
+        <nav class="text-xs text-gray-500 mb-6 flex items-center space-x-2">
+            <a href="/shop" class="hover:text-black">Каталог</a>
+            <span>/</span>
+            <span class="text-gray-900 font-medium">{{ product.title }}</span>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left Gallery -->
+            <div class="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4">
+                <!-- Thumbs -->
+                <div class="flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto max-h-[550px] shrink-0">
+                    {% for img in product.images %}
+                    <button onclick="setMainImage('{{ img }}')" class="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden border-2 border-transparent focus:border-rose-500 shrink-0">
+                        <img src="{{ img }}" class="w-full h-full object-cover">
+                    </button>
+                    {% endfor %}
+                </div>
+                <!-- Main Image -->
+                <div class="flex-1 bg-gray-100 rounded-2xl overflow-hidden aspect-[3/4] relative">
+                    <img id="main-image" src="{{ product.images[0] }}" class="w-full h-full object-cover">
+                    <span class="absolute top-4 left-4 badge-discount">-48%</span>
+                </div>
+            </div>
+
+            <!-- Right Details -->
+            <div class="lg:col-span-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center text-xs text-amber-500 font-semibold mb-2">
+                        <i class="fa-solid fa-star mr-1"></i> {{ product.rating }} <span class="text-gray-400 font-normal ml-1">({{ product.reviews_count }} відгуків)</span>
+                    </div>
+
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
+                        {{ product.title }}
+                    </h1>
+
+                    <p class="text-xs text-gray-500 mt-2 leading-relaxed">
+                        {{ product.short_desc }}
+                    </p>
+
+                    <!-- Price -->
+                    <div class="mt-4 flex items-baseline space-x-3">
+                        <span class="text-3xl font-black text-rose-600">{{ product.price }} грн</span>
+                        <span class="text-sm text-gray-400 line-through">{{ product.old_price }} грн</span>
+                    </div>
+
+                    <!-- Colors -->
+                    <div class="mt-6">
+                        <label class="text-xs font-bold text-gray-700 block mb-2">Колір: <span class="font-normal text-gray-500">{{ product.color }}</span></label>
+                        <div class="flex space-x-2">
+                            <button class="w-10 h-10 rounded-full border-2 border-rose-500 overflow-hidden p-0.5">
+                                <img src="{{ product.images[0] }}" class="w-full h-full object-cover rounded-full">
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sizes -->
+                    <div class="mt-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-gray-700">Розмір:</label>
+                            <button onclick="toggleSizeModal()" class="text-xs text-rose-600 font-semibold hover:underline flex items-center">
+                                <i class="fa-solid fa-ruler mr-1"></i> Таблиця розмірів
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2" id="size-options">
+                            {% for sz in product.sizes %}
+                            <button onclick="selectSize('{{ sz.name }}', this)" class="size-btn border rounded-xl p-3 text-left hover:border-black transition flex flex-col">
+                                <span class="text-xs font-bold text-gray-900">{{ sz.name }}</span>
+                                <span class="text-[10px] text-gray-500 mt-0.5">{{ sz.chest }}</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="mt-8 space-y-3">
+                        <button onclick="addToCart()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-rose-200 transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                            <span>Додати в кошик</span>
+                        </button>
+                        <button onclick="openQuickOrder()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 rounded-xl transition">
+                            Швидке замовлення за 1 хвилину
+                        </button>
+                    </div>
+
+                    <!-- Advantages -->
+                    <div class="mt-8 border-t pt-6 space-y-3 text-xs text-gray-600">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-truck-fast text-rose-500 text-base"></i>
+                            <span>Нова Пошта 1–3 дні по всій Україні</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-shield-halved text-rose-500 text-base"></i>
+                            <span>Оплата при отриманні або карткою онлайн</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-arrows-rotate text-rose-500 text-base"></i>
+                            <span>Обмін та повернення протягом 14 днів</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Specs & Reviews -->
+        <section class="mt-16 border-t pt-10">
+            <h2 class="text-xl font-bold text-gray-900 mb-6">Характеристики та тканина</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs">
+                <div class="bg-white p-6 rounded-2xl border space-y-3">
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Країна виробництва</span>
+                        <span class="font-bold">Україна</span>
+                    </div>
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Склад тканини</span>
+                        <span class="font-bold">85% бавовна, 15% еластан</span>
+                    </div>
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Тканина</span>
+                        <span class="font-bold">{{ product.fabric }}</span>
+                    </div>
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Сезон</span>
+                        <span class="font-bold">Весна-Літо</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border space-y-3">
+                    <h3 class="font-bold text-sm text-gray-900 mb-2">Особливості крою</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Верх рівний, а нижче стегон спідниця пришита зборкою й розширюється. Тканина м'яка, дихаюча, не липне до тіла та ховає всі нюанси фігури.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Customer Reviews -->
+        <section class="mt-16 border-t pt-10">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Відгуки покупчинь ({{ product.reviews_count }})</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                {% for rev in product.reviews %}
+                <div class="bg-white p-5 rounded-2xl border space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-gray-900">{{ rev.author }}</span>
+                        <span class="text-gray-400">{{ rev.date }}</span>
+                    </div>
+                    <div class="text-amber-500">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed">{{ rev.text }}</p>
+                    <span class="inline-block text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded font-semibold">Підтверджена покупка</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <!-- Size Modal -->
+    <div id="size-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleSizeModal()"></div>
+        <div class="relative max-w-lg w-full mx-auto my-12 bg-white rounded-2xl shadow-2xl p-6 z-10 text-xs space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-bold text-gray-900">Таблиця розмірів</h3>
+                <button onclick="toggleSizeModal()" class="text-gray-400 text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700">
+                        <th class="p-2 border">Розмір</th>
+                        <th class="p-2 border">Обхват грудей, см</th>
+                        <th class="p-2 border">Стегна</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="p-2 border font-bold">S-M</td><td class="p-2 border">83–96</td><td class="p-2 border">вільні</td></tr>
+                    <tr><td class="p-2 border font-bold">L-XL</td><td class="p-2 border">97–103</td><td class="p-2 border">вільні</td></tr>
+                    <tr><td class="p-2 border font-bold">2XL-3XL</td><td class="p-2 border">104–113</td><td class="p-2 border">вільні</td></tr>
+                    <tr><td class="p-2 border font-bold">4XL-5XL</td><td class="p-2 border">114–125</td><td class="p-2 border">вільні</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Order Modal -->
+    <div id="quick-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeQuickOrder()"></div>
+        <div class="relative max-w-md w-full mx-auto my-20 bg-white rounded-2xl shadow-2xl p-6 z-10 text-xs space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base font-bold text-gray-900">Швидке замовлення</h3>
+                <button onclick="closeQuickOrder()" class="text-gray-400 text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-gray-500">Залиште имя та телефон — менеджер передзвонить для уточнення замовлення.</p>
+            <div>
+                <label class="block font-bold mb-1">Ваше ім'я</label>
+                <input id="quick-name" type="text" class="w-full border p-2.5 rounded-xl" placeholder="Олена">
+            </div>
+            <div>
+                <label class="block font-bold mb-1">Телефон</label>
+                <input id="quick-phone" type="tel" class="w-full border p-2.5 rounded-xl" placeholder="+380...">
+            </div>
+            <button onclick="submitQuickOrder()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl">
+                Замовити
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Drawer Modal -->
+    <div id="cart-drawer" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleCart()"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col z-10">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900">Кошик</h3>
+                <button onclick="toggleCart()" class="text-gray-400 hover:text-black text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="cart-items" class="p-4 flex-1 overflow-y-auto space-y-4"></div>
+            <div class="p-4 border-t bg-gray-50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-medium text-gray-700">Разом:</span>
+                    <span id="cart-total" class="text-xl font-bold text-rose-600">0 грн</span>
+                </div>
+                <button onclick="submitCartOrder()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-200">
+                    Оформити замовлення
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedSize = 'S-M';
+        let cart = JSON.parse(localStorage.getItem('merai_cart') || '[]');
+
+        function setMainImage(src) {
+            document.getElementById('main-image').src = src;
+        }
+
+        function selectSize(sz, btn) {
+            selectedSize = sz;
+            document.querySelectorAll('.size-btn').forEach(b => {
+                b.classList.remove('border-rose-600', 'bg-rose-50');
+            });
+            btn.classList.add('border-rose-600', 'bg-rose-50');
+        }
+
+        function toggleSizeModal() {
+            document.getElementById('size-modal').classList.toggle('hidden');
+        }
+
+        function openQuickOrder() {
+            document.getElementById('quick-modal').classList.remove('hidden');
+        }
+
+        function closeQuickOrder() {
+            document.getElementById('quick-modal').classList.add('hidden');
+        }
+
+        function addToCart() {
+            cart.push({
+                title: '{{ product.title }}',
+                slug: '{{ product.slug }}',
+                img: '{{ product.images[0] }}',
+                price: Number('{{ product.price }}'),
+                size: selectedSize,
+                qty: 1
+            });
+            localStorage.setItem('merai_cart', JSON.stringify(cart));
+            updateCartUI();
+            toggleCart();
+        }
+
+        function updateCartUI() {
+            const countEl = document.getElementById('cart-count');
+            const itemsEl = document.getElementById('cart-items');
+            const totalEl = document.getElementById('cart-total');
+
+            countEl.innerText = cart.reduce((acc, item) => acc + item.qty, 0);
+
+            if (cart.length === 0) {
+                itemsEl.innerHTML = '<p class="text-center text-gray-400 py-12">У кошику поки порожньо</p>';
+                totalEl.innerText = '0 грн';
+                return;
+            }
+
+            let html = '';
+            let total = 0;
+            cart.forEach((item, index) => {
+                total += item.price * item.qty;
+                html += `
+                    <div class="flex items-center space-x-3 bg-gray-50 p-3 rounded-xl">
+                        <img src="${item.img}" class="w-16 h-20 object-cover rounded-lg">
+                        <div class="flex-1">
+                            <h5 class="text-xs font-bold text-gray-900">${item.title}</h5>
+                            <p class="text-[11px] text-gray-500">Розмір: ${item.size}</p>
+                            <span class="text-xs font-bold text-rose-600">${item.price} грн x ${item.qty}</span>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500 text-sm p-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            itemsEl.innerHTML = html;
+            totalEl.innerText = total + ' грн';
+        }
+
+        function toggleCart() {
+            document.getElementById('cart-drawer').classList.toggle('hidden');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            localStorage.setItem('merai_cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        function submitQuickOrder() {
+            const name = document.getElementById('quick-name').value;
+            const phone = document.getElementById('quick-phone').value;
+            if (!name || !phone) {
+                alert('Будь ласка, введіть ім\'я та номер телефону');
+                return;
+            }
+            fetch('/api/shop/checkout', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    customer_name: name,
+                    customer_phone: phone,
+                    items: [{ title: '{{ product.title }}', price: Number('{{ product.price }}'), size: selectedSize, qty: 1 }]
+                })
+            }).then(r => r.json()).then(data => {
+                if (data.ok) {
+                    alert('Замовлення #' + data.order_id + ' успішно створено! Ми зателефонуємо вам.');
+                    closeQuickOrder();
+                }
+            });
+        }
+
+        function submitCartOrder() {
+            if (cart.length === 0) return;
+            fetch('/api/shop/checkout', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ items: cart })
+            }).then(r => r.json()).then(data => {
+                if (data.ok) {
+                    alert('Дякуємо! Ваше замовлення #' + data.order_id + ' прийнято!');
+                    cart = [];
+                    localStorage.removeItem('merai_cart');
+                    updateCartUI();
+                    toggleCart();
+                }
+            });
+        }
+
+        updateCartUI();
+    </script>
+</body>
+</html>

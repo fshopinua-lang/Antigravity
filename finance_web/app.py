@@ -24,6 +24,111 @@ app = Flask(__name__)
 app.secret_key = "finance-report-secret-2025"
 
 
+PRODUCTS_DB = [
+    {
+        "id": 1,
+        "slug": "kazerta-chornyi-700001261",
+        "title": "Сукня зі зборкою Казерта — чорна в рожево-білу квітку",
+        "short_desc": "Сукня в квіточку, зборка на спідниці: вільні стегна ховають зайве, а штапель не просвічується.",
+        "price": 999,
+        "old_price": 1929,
+        "rating": 4.8,
+        "reviews_count": 135,
+        "color": "Чорна в рожево-білу квітку",
+        "fabric": "Турецький штапель (85% бавовна, 15% еластан)",
+        "images": [
+            "https://media.meraimagic.com/13e9f5e19c86eac3b815d9e52ae8a1e18216b74c/800.webp",
+            "https://media.meraimagic.com/4ae9eb4088a5a84950040ace4010f46c22329685/800.webp",
+            "https://media.meraimagic.com/03447460685bb942a4828f59d503081795993d19/800.webp",
+            "https://media.meraimagic.com/3d62c941139cd8733ba4f52b819e2182e4c4c661/800.webp"
+        ],
+        "sizes": [
+            {"name": "S-M", "chest": "Підійде: груди 83–96 см"},
+            {"name": "L-XL", "chest": "Підійде: груди 97–103 см"},
+            {"name": "2XL-3XL", "chest": "Підійде: груди 104–113 см"},
+            {"name": "4XL-5XL", "chest": "Підійде: груди 114–125 см"}
+        ],
+        "reviews": [
+            {"author": "Надія", "date": "27 липня 2026 р.", "text": "Сукня чудова! Тканина дуже легка, штапель приємний до тіла."},
+            {"author": "Віра Ч.", "date": "24 червня 2026 р.", "text": "Замовлення отримала вчасно. Сукня гарної якості, розмір відповідає заявленому."},
+            {"author": "Оксана М.", "date": "19 червня 2026 р.", "text": "Дуже гарна сукня, брала для мами. Вона дуже задоволена!"}
+        ]
+    },
+    {
+        "id": 2,
+        "slug": "marten-bezhevyi",
+        "title": "Тепла сукня-база Мартен на флісі — бежева",
+        "short_desc": "Затишна базова сукня з м'яким флісом всередині. Ідеально для прохолодної погоди.",
+        "price": 1299,
+        "old_price": 2959,
+        "rating": 4.9,
+        "reviews_count": 82,
+        "color": "Бежева",
+        "fabric": "Трикотаж на флісі",
+        "images": [
+            "https://media.meraimagic.com/c0da700f4bc610d37a876e7fc6cd00bd594d52c7/400.webp"
+        ],
+        "sizes": [
+            {"name": "S-M", "chest": "Підійде: груди 83–96 см"},
+            {"name": "L-XL", "chest": "Підійде: груди 97–103 см"}
+        ],
+        "reviews": [
+            {"author": "Олена К.", "date": "13 жовтня 2025 р.", "text": "Дівчата, це любовь! Тепла, затишна, фліс казка!"}
+        ]
+    },
+    {
+        "id": 3,
+        "slug": "boza-chornyi",
+        "title": "Тепла сукня-трапеція Боза на флісі — чорна",
+        "short_desc": "Вільна сукня-трапеція, що приховує живіт та стегна. М'який турецький трикотаж.",
+        "price": 1299,
+        "old_price": 3169,
+        "rating": 4.7,
+        "reviews_count": 64,
+        "color": "Чорна",
+        "fabric": "Трикотаж на флісі",
+        "images": [
+            "https://media.meraimagic.com/2267c4cc9d9d05eee4d3a7ff5ca31c5b95defedb/400.webp"
+        ],
+        "sizes": [
+            {"name": "S-M", "chest": "Підійде: груди 83–96 см"},
+            {"name": "L-XL", "chest": "Підійде: груди 97–103 см"},
+            {"name": "2XL-3XL", "chest": "Підійде: груди 104–113 см"}
+        ],
+        "reviews": [
+            {"author": "Тетяна Б.", "date": "19 червня 2026 р.", "text": "Супер, мені дуже сподобалась!"}
+        ]
+    }
+]
+
+# ─── Магазин MERAI ─────────────────────────────────────────────────────────────
+
+@app.route("/shop")
+def shop_catalog():
+    return render_template("shop_catalog.html", products=PRODUCTS_DB)
+
+
+@app.route("/shop/p/<product_slug>")
+def shop_product(product_slug):
+    prod = next((p for p in PRODUCTS_DB if p["slug"] == product_slug), None)
+    if not prod:
+        prod = PRODUCTS_DB[0]
+    return render_template("shop_product.html", product=prod)
+
+
+@app.route("/api/shop/products")
+def api_shop_products():
+    return jsonify(PRODUCTS_DB)
+
+
+@app.route("/api/shop/checkout", methods=["POST"])
+def api_shop_checkout():
+    import random
+    order_id = random.randint(10000, 99999)
+    data = request.json or {}
+    return jsonify({"ok": True, "order_id": order_id, "data": data})
+
+
 # ─── Страницы ─────────────────────────────────────────────────────────────────
 
 @app.route("/")

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "finance"))
 
 import pandas as pd
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, redirect, render_template, request, send_file
 from data_store import (
     EXPENSE_CATEGORIES, add_expense, add_product, add_revenue,
     calc_expenses, calc_pnl, calc_production, calc_revenue,
@@ -133,8 +133,7 @@ def api_shop_checkout():
 
 @app.route("/")
 def index():
-    periods = get_periods()
-    return render_template("index.html", periods=periods)
+    return redirect("/shop")
 
 
 @app.route("/period/<period>")
